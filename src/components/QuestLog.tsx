@@ -1,221 +1,289 @@
 import React, { useState } from 'react';
-import soundManager from './SoundManager';
-import { DayItinerary, Quest } from '../data/mockData';
-import { Award, CheckSquare, Square, CheckCircle2, ChevronRight, HelpCircle } from 'lucide-react';
+import { motion } from 'framer-motion';
+import { useGameStore } from '../store/useGameStore';
+import { Quest, QuestRarity, QuestDifficulty } from '../types/game';
+import { soundManager } from './SoundManager';
+import { Award, CheckSquare, Square, CheckCircle2, AlertTriangle, Compass, ShieldAlert, Sparkles, BookOpen, Clock } from 'lucide-react';
 
-interface QuestLogProps {
-  itinerary: DayItinerary[];
-  playerStats: any;
-  setPlayerStats: React.Dispatch<React.SetStateAction<any>>;
-  onUnlockBadge: (badge: string) => void;
-}
+export const QuestLog: React.FC = () => {
+  const activeRegionId = useGameStore((state) => state.activeRegionId);
+  const regions = useGameStore((state) => state.regions);
+  const allQuests = useGameStore((state) => state.quests);
+  const toggleObjective = useGameStore((state) => state.toggleObjective);
+  const claimQuestReward = useGameStore((state) => state.claimQuestReward);
+  const player = useGameStore((state) => state.player);
+  const purchasedItems = useGameStore((state) => state.purchasedItems);
 
-export const QuestLog: React.FC<QuestLogProps> = ({
-  itinerary,
-  playerStats,
-  setPlayerStats,
-  onUnlockBadge
-}) => {
-  const [activeDayIdx, setActiveDayIdx] = useState(0);
-  const [daysState, setDaysState] = useState<DayItinerary[]>(itinerary);
+  const activeRegion = regions.find((r) => r.id === activeRegionId);
+  const regionQuests = activeRegionId ? allQuests[activeRegionId] || [] : [];
 
-  const activeDay = daysState[activeDayIdx];
+  // Local selection of quest
+  const [selectedQuestId, setSelectedQuestId] = useState<string | null>(
+    regionQuests.length > 0 ? regionQuests[0].id : null
+  );
 
-  const handleToggleQuest = (questId: string) => {
-    // Update local state
-    let questRewardXP = 0;
-    let questRewardGold = 0;
-    let becameCompleted = false;
+  if (!activeRegion || !player) {
+    return (
+      <div className="bg-zinc-900 border-4 border-black p-8 rounded shadow-[6px_6px_0px_#000] text-center text-zinc-500">
+        <ShieldAlert size={32} className="mx-auto mb-2" />
+        <span className="font-retro text-xs">NO ACTIVE REGION SET</span>
+      </div>
+    );
+  }
 
-    const updatedDays = daysState.map((day) => {
-      const updatedQuests = day.quests.map((q) => {
-        if (q.id === questId) {
-          becameCompleted = !q.completed;
-          questRewardXP = becameCompleted ? q.xpReward : -q.xpReward;
-          questRewardGold = becameCompleted ? q.goldReward : -q.goldReward;
-          return { ...q, completed: becameCompleted };
-        }
-        return q;
-      });
-      return { ...day, quests: updatedQuests };
-    });
+  const selectedQuest = regionQuests.find((q) => q.id === selectedQuestId) || regionQuests[0];
 
-    setDaysState(updatedDays);
-
-    if (becameCompleted) {
-      soundManager.playCoin();
-    } else {
-      soundManager.playClick();
+  const getRarityColor = (rarity: QuestRarity) => {
+    switch (rarity) {
+      case 'Legendary':
+        return 'text-amber-400 border-amber-400 bg-amber-950/20';
+      case 'Epic':
+        return 'text-purple-400 border-purple-400 bg-purple-950/20';
+      case 'Rare':
+        return 'text-blue-400 border-blue-400 bg-blue-950/20';
+      case 'Uncommon':
+        return 'text-emerald-400 border-emerald-400 bg-emerald-950/20';
+      default:
+        return 'text-zinc-400 border-zinc-500 bg-zinc-900/30';
     }
-
-    // Apply XP and Gold changes
-    setPlayerStats((prev: any) => {
-      let newXp = prev.xp + questRewardXP;
-      let newGold = prev.gold + questRewardGold;
-      let newLevel = prev.level;
-
-      // Handle Level Up (e.g. 100 XP per level)
-      if (newXp >= 100 * newLevel) {
-        newXp -= 100 * newLevel;
-        newLevel += 1;
-        // Trigger sound inside timeout to avoid overlapping
-        setTimeout(() => soundManager.playLevelUp(), 100);
-      } else if (newXp < 0 && newLevel > 1) {
-        // level down
-        newLevel -= 1;
-        newXp = 100 * newLevel + newXp;
-      } else if (newXp < 0) {
-        newXp = 0;
-      }
-
-      return {
-        ...prev,
-        xp: newXp,
-        gold: newGold,
-        level: newLevel
-      };
-    });
   };
 
-  const handleClaimDayReward = (dayIdx: number) => {
-    const day = daysState[dayIdx];
-    if (day.rewardClaimed) return;
+  const getDifficultyColor = (diff: QuestDifficulty) => {
+    switch (diff) {
+      case 'Legendary':
+        return 'text-red-500 font-bold';
+      case 'Hard':
+        return 'text-orange-500';
+      case 'Medium':
+        return 'text-yellow-500';
+      default:
+        return 'text-emerald-400';
+    }
+  };
 
-    soundManager.playQuestComplete();
-
-    // Unlock special badges
-    if (dayIdx === 0) onUnlockBadge('Explorer');
-    if (dayIdx === 1) onUnlockBadge('Food Hunter');
-
-    // Mark claimed
-    const updatedDays = [...daysState];
-    updatedDays[dayIdx] = { ...day, rewardClaimed: true };
-    setDaysState(updatedDays);
-
-    // Reward player with gold and XP
-    setPlayerStats((prev: any) => {
-      let newXp = prev.xp + 150;
-      let newGold = prev.gold + 50;
-      let newLevel = prev.level;
-
-      if (newXp >= 100 * newLevel) {
-        newXp -= 100 * newLevel;
-        newLevel += 1;
-        setTimeout(() => soundManager.playLevelUp(), 100);
-      }
-
-      return {
-        ...prev,
-        xp: newXp,
-        gold: newGold,
-        level: newLevel
-      };
-    });
+  const handleQuestSelect = (quest: Quest) => {
+    soundManager.playClick();
+    setSelectedQuestId(quest.id);
   };
 
   return (
     <div className="bg-zinc-900 border-4 border-black p-4 rounded shadow-[6px_6px_0px_#000] w-full flex flex-col md:flex-row gap-6">
-      {/* LEFT: Sun Cycles (Tabs list) */}
-      <div className="flex flex-row md:flex-col gap-2 overflow-x-auto md:overflow-visible pb-2 md:pb-0 md:w-44 shrink-0">
-        {daysState.map((day, idx) => {
-          const allDone = day.quests.every((q) => q.completed);
-          return (
-            <button
-              key={day.dayNumber}
-              onClick={() => {
-                soundManager.playClick();
-                setActiveDayIdx(idx);
-              }}
-              className={`p-3 border-2 border-black font-retro text-[9px] text-left uppercase cursor-pointer rounded flex items-center justify-between shrink-0 ${
-                activeDayIdx === idx
-                  ? 'bg-yellow-500 text-black border-yellow-300'
-                  : 'bg-zinc-800 hover:bg-zinc-700 text-zinc-300'
-              }`}
-            >
-              <span>🌅 CYCLE {day.dayNumber}</span>
-              {allDone && <CheckCircle2 size={12} className="text-emerald-500 shrink-0 ml-1" />}
-            </button>
-          );
-        })}
-      </div>
+      
+      {/* LEFT: Quest Tree Directory */}
+      <div className="flex-1 flex flex-col gap-3 min-h-[300px]">
+        <div className="flex items-center gap-2 border-b-2 border-zinc-800 pb-2.5 mb-1">
+          <BookOpen className="text-yellow-400 animate-pulse" size={14} />
+          <span className="font-retro text-[9px] text-zinc-400">EXPEDITION QUEST BOARD</span>
+        </div>
 
-      {/* RIGHT: Quest logs list */}
-      <div className="flex-1 bg-zinc-950 p-4 border-4 border-zinc-800 rounded relative">
-        {activeDay ? (
-          <div>
-            {/* Header info */}
-            <div className="border-b-2 border-zinc-800 pb-3 mb-4 flex items-center justify-between">
-              <div>
-                <h3 className="font-retro text-xs text-yellow-400 uppercase leading-none">
-                  {activeDay.title}
-                </h3>
-                <span className="font-pixel text-lg text-indigo-300 mt-1 block">
-                  Region focus: {activeDay.theme}
-                </span>
-              </div>
-              <span className="font-retro text-[9px] text-zinc-500">
-                {activeDay.quests.filter((q) => q.completed).length}/{activeDay.quests.length} COMPLETE
-              </span>
-            </div>
+        <div className="flex flex-col gap-2 overflow-y-auto max-h-[400px] pr-1">
+          {regionQuests.map((q) => {
+            const isSelected = selectedQuest?.id === q.id;
+            const isClaimReady = q.status === 'Claim Reward';
+            const isCompleted = q.status === 'Completed';
 
-            {/* Quests Checklist */}
-            <div className="flex flex-col gap-3 mb-6">
-              {activeDay.quests.map((q) => (
-                <div
-                  key={q.id}
-                  onClick={() => handleToggleQuest(q.id)}
-                  className={`flex items-start gap-3 p-3 border-2 border-black rounded cursor-pointer transition-colors shadow-[2px_2px_0px_#000] hover:bg-zinc-900 ${
-                    q.completed ? 'bg-zinc-900/60 border-zinc-800 opacity-60' : 'bg-zinc-850 border-zinc-750'
-                  }`}
-                >
-                  <button className="text-yellow-400 mt-0.5">
-                    {q.completed ? <CheckSquare size={16} /> : <Square size={16} />}
-                  </button>
-                  <div className="flex-1">
-                    <p className={`font-sans text-xs ${q.completed ? 'line-through text-zinc-500' : 'text-slate-200'}`}>
-                      {q.text}
-                    </p>
-                    <div className="flex gap-3 mt-1.5 text-[8px] font-retro text-zinc-400">
-                      <span className="text-indigo-400">✨ +{q.xpReward} XP</span>
-                      <span className="text-yellow-500">💰 +{q.goldReward} GP</span>
-                      <span className="uppercase text-zinc-500">[{q.category}]</span>
+            // Check if player has required items
+            const missingItems = q.requiredItems.filter(item => !purchasedItems.includes(item));
+            const isLocked = q.locked || missingItems.length > 0;
+
+            return (
+              <div
+                key={q.id}
+                onClick={() => !isLocked && handleQuestSelect(q)}
+                className={`p-3 border-2 rounded transition-all shadow-[2px_2px_0px_#000] relative overflow-hidden ${
+                  isLocked
+                    ? 'border-zinc-800 bg-zinc-950/40 opacity-40 cursor-not-allowed'
+                    : isSelected
+                    ? 'border-yellow-400 bg-zinc-950'
+                    : 'border-black bg-zinc-850 hover:bg-zinc-800 cursor-pointer'
+                }`}
+              >
+                {/* Node connector line */}
+                <div className="absolute top-0 bottom-0 left-1 w-1 bg-zinc-800"></div>
+
+                <div className="flex justify-between items-start gap-2 pl-3">
+                  <div>
+                    <div className="flex items-center gap-1.5">
+                      <span className="font-retro text-[9px] text-slate-100 uppercase tracking-wide">
+                        {q.title}
+                      </span>
+                      <span className={`border text-[6px] font-retro px-1 py-0.5 rounded leading-none ${getRarityColor(q.rarity)}`}>
+                        {q.rarity}
+                      </span>
+                    </div>
+
+                    <div className="flex gap-3 mt-1.5 text-[7px] font-retro text-zinc-400">
+                      <span>Category: {q.category}</span>
+                      <span className={getDifficultyColor(q.difficulty)}>Diff: {q.difficulty.toUpperCase()}</span>
                     </div>
                   </div>
-                </div>
-              ))}
-            </div>
 
-            {/* Claim Reward Button */}
-            {activeDay.quests.every((q) => q.completed) && (
-              <div className="bg-indigo-950/40 border-2 border-indigo-700 p-4 rounded flex flex-col sm:flex-row items-center justify-between gap-4">
-                <div className="flex items-center gap-3">
-                  <span className="text-3xl animate-bounce">🎁</span>
-                  <div>
-                    <h4 className="font-retro text-[10px] text-indigo-300">SUN CYCLE ACCOMPLISHED!</h4>
-                    <p className="font-pixel text-sm text-zinc-400">Claim your chest of travel items and badge rewards.</p>
+                  {/* Status Indicator Badges */}
+                  <div className="shrink-0 flex items-center gap-1">
+                    {isLocked ? (
+                      <span className="font-retro text-[6px] text-zinc-500 bg-zinc-900 border border-zinc-800 px-1 py-0.5 rounded">
+                        LOCKED
+                      </span>
+                    ) : isCompleted ? (
+                      <CheckCircle2 size={14} className="text-emerald-500 animate-pulse" />
+                    ) : isClaimReady ? (
+                      <span className="font-retro text-[6px] text-yellow-400 bg-yellow-950/50 border border-yellow-500 px-1 py-0.5 rounded animate-pulse font-bold">
+                        LOOT READY
+                      </span>
+                    ) : q.status === 'In Progress' ? (
+                      <span className="font-retro text-[6px] text-sky-400 bg-sky-950/50 border border-sky-500 px-1 py-0.5 rounded animate-pulse">
+                        RUNNING
+                      </span>
+                    ) : (
+                      <span className="font-retro text-[6px] text-zinc-400 bg-zinc-900 border border-zinc-700 px-1 py-0.5 rounded">
+                        TODO
+                      </span>
+                    )}
                   </div>
                 </div>
-                <button
-                  onClick={() => handleClaimDayReward(activeDayIdx)}
-                  disabled={activeDay.rewardClaimed}
-                  className={`font-retro text-[9px] py-2 px-4 border-2 border-black rounded shadow-[2px_2px_0px_#000] active:translate-y-0.5 cursor-pointer ${
-                    activeDay.rewardClaimed
-                      ? 'bg-zinc-800 border-zinc-700 text-zinc-500 shadow-none active:translate-y-0'
-                      : 'bg-emerald-500 hover:bg-emerald-600 text-black border-emerald-300 font-semibold animate-pulse'
-                  }`}
-                >
-                  {activeDay.rewardClaimed ? 'CLAIMED ✓' : 'CLAIM +150 XP, +50 GP 💎'}
-                </button>
               </div>
-            )}
+            );
+          })}
+        </div>
+      </div>
+
+      {/* RIGHT: Quest Inspector Drawer */}
+      <div className="w-full md:w-96 bg-zinc-950 border-4 border-zinc-800 p-4 rounded flex flex-col justify-between shrink-0 min-h-[350px]">
+        {selectedQuest ? (
+          <div className="flex flex-col h-full justify-between gap-4">
+            
+            <div>
+              {/* Quest Header */}
+              <div className="border-b border-zinc-800 pb-3 mb-3">
+                <div className="flex justify-between items-center gap-2 mb-1.5">
+                  <span className={`font-retro text-[7px] border px-1.5 py-0.5 rounded ${getRarityColor(selectedQuest.rarity)}`}>
+                    {selectedQuest.category.toUpperCase()} • {selectedQuest.rarity.toUpperCase()}
+                  </span>
+                  <span className="font-retro text-[7px] text-zinc-500 flex items-center gap-1">
+                    <Clock size={10} /> {selectedQuest.estimatedDuration}
+                  </span>
+                </div>
+                <h4 className="font-retro text-xs text-yellow-400 leading-tight">
+                  {selectedQuest.title}
+                </h4>
+              </div>
+
+              {/* Story lore box */}
+              <div className="bg-zinc-900 border border-zinc-850 p-2.5 rounded mb-3 text-[12px] font-pixel text-zinc-400 italic">
+                "{selectedQuest.story}"
+              </div>
+
+              <p className="text-zinc-300 font-sans text-xs mb-4">
+                {selectedQuest.description}
+              </p>
+
+              {/* Objective Progress Bar */}
+              <div className="mb-4">
+                <div className="flex justify-between font-retro text-[7px] text-zinc-500 mb-1">
+                  <span>QUEST PROGRESSION</span>
+                  <span>{selectedQuest.completionPercent}%</span>
+                </div>
+                <div className="w-full bg-zinc-900 h-2 border border-black p-0.5 rounded overflow-hidden">
+                  <motion.div
+                    initial={{ width: 0 }}
+                    animate={{ width: `${selectedQuest.completionPercent}%` }}
+                    className="bg-indigo-500 h-full rounded-sm"
+                    transition={{ type: 'spring', stiffness: 80 }}
+                  />
+                </div>
+              </div>
+
+              {/* Required Items Check */}
+              {selectedQuest.requiredItems.length > 0 && (
+                <div className="mb-4 p-2.5 bg-zinc-900 border border-zinc-850 rounded">
+                  <span className="font-retro text-[7px] text-zinc-500 block mb-1">REQUIRED GEAR</span>
+                  <div className="flex flex-wrap gap-2">
+                    {selectedQuest.requiredItems.map((item) => {
+                      const hasItem = purchasedItems.includes(item);
+                      return (
+                        <span
+                          key={item}
+                          className={`font-pixel text-xs px-2 py-0.5 border rounded flex items-center gap-1.5 ${
+                            hasItem
+                              ? 'bg-emerald-950/20 border-emerald-500 text-emerald-400'
+                              : 'bg-red-950/20 border-red-800 text-red-400'
+                          }`}
+                        >
+                          {hasItem ? '✓' : '⚠️'} {item.toUpperCase()}
+                        </span>
+                      );
+                    })}
+                  </div>
+                </div>
+              )}
+
+              {/* Checklist Objectives */}
+              <div>
+                <span className="font-retro text-[7px] text-zinc-500 block mb-2">OBJECTIVES CHECKLIST</span>
+                <div className="flex flex-col gap-2">
+                  {selectedQuest.objectives.map((obj) => {
+                    const isCompleted = selectedQuest.status === 'Completed';
+                    return (
+                      <div
+                        key={obj.id}
+                        onClick={() => selectedQuest.status !== 'Completed' && toggleObjective(selectedQuest.id, obj.id)}
+                        className={`flex items-start gap-2.5 p-2 border-2 border-black rounded transition-colors shadow-[1px_1px_0px_#000] ${
+                          isCompleted
+                            ? 'bg-zinc-950/40 border-zinc-900 opacity-50 cursor-not-allowed'
+                            : obj.completed
+                            ? 'bg-zinc-900/60 border-zinc-800 cursor-pointer opacity-70'
+                            : 'bg-zinc-850 border-zinc-750 cursor-pointer hover:bg-zinc-900'
+                        }`}
+                      >
+                        <button className="text-yellow-400 shrink-0 mt-0.5">
+                          {obj.completed || isCompleted ? <CheckSquare size={12} /> : <Square size={12} />}
+                        </button>
+                        <span className={`font-pixel text-base leading-tight ${
+                          obj.completed || isCompleted ? 'line-through text-zinc-500' : 'text-slate-200'
+                        }`}>
+                          {obj.text}
+                        </span>
+                      </div>
+                    );
+                  })}
+                </div>
+              </div>
+
+            </div>
+
+            {/* Claim Rewards panel / button */}
+            <div className="mt-4 pt-3 border-t border-zinc-900">
+              {selectedQuest.status === 'Claim Reward' ? (
+                <button
+                  onClick={() => claimQuestReward(selectedQuest.id)}
+                  className="w-full bg-emerald-500 hover:bg-emerald-600 text-black font-retro text-[9px] font-bold py-3 px-4 border-4 border-black rounded shadow-[4px_4px_0px_#000] hover:shadow-[2px_2px_0px_#000] active:translate-x-1 active:translate-y-1 transition-all cursor-pointer flex items-center justify-center gap-1.5 animate-pulse"
+                >
+                  <Sparkles size={14} className="animate-spin" /> CLAIM +{selectedQuest.xpReward} XP, +{selectedQuest.goldReward} GP 💎
+                </button>
+              ) : selectedQuest.status === 'Completed' ? (
+                <div className="bg-zinc-900/50 border border-zinc-800 py-2.5 px-4 rounded text-center font-retro text-[8px] text-zinc-500">
+                  REWARD CLAIMED ✓
+                </div>
+              ) : (
+                <div className="bg-zinc-900 border border-zinc-850 p-2.5 rounded flex justify-between items-center text-[8px] font-retro text-zinc-400">
+                  <span>POTENTIAL LOOT:</span>
+                  <div className="flex gap-2">
+                    <span className="text-indigo-400">✨ +{selectedQuest.xpReward} XP</span>
+                    <span className="text-yellow-500">💰 +{selectedQuest.goldReward} GP</span>
+                  </div>
+                </div>
+              )}
+            </div>
+
           </div>
         ) : (
-          <div className="flex flex-col items-center justify-center py-12 text-zinc-500">
-            <HelpCircle size={32} className="mb-2" />
-            <span className="font-retro text-xs">NO ACTIVE QUEST LOG FOUND</span>
+          <div className="flex flex-col items-center justify-center h-full text-zinc-600 text-center py-12">
+            <span className="text-4xl mb-2">📜</span>
+            <span className="font-retro text-[8px]">SELECT QUEST SLOT FOR ANALYSIS</span>
           </div>
         )}
       </div>
+
     </div>
   );
 };

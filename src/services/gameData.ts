@@ -1,4 +1,4 @@
-import { Region, InventoryItem, Achievement, Quest } from '../types/game';
+import { Region, InventoryItem, Achievement, Challenge } from '../types/game';
 
 export const CHARACTER_CLASSES = [
   { id: 'explorer', name: 'Explorer', description: 'Bonus XP (+15%) on finding new locations.', emoji: '🤠', perk: '+15% XP Gain' },
@@ -36,7 +36,7 @@ export const BAZAAR_ITEMS: InventoryItem[] = [
 ];
 
 export const ACHIEVEMENTS_LIST: Achievement[] = [
-  { id: 'Explorer', title: 'Overworld Explorer', description: 'Conquer your first quest line in any region.', icon: '🧭', unlocked: false },
+  { id: 'Explorer', title: 'Overworld Explorer', description: 'Conquer your first challenge in any region.', icon: '🧭', unlocked: false },
   { id: 'Food Hunter', title: 'Gourmet Tavern Hunter', description: 'Purchase and eat a bowl of Cyber Ramen.', icon: '🍜', unlocked: false },
   { id: 'Desert King Defeated', title: 'Sand Shogun', description: 'Defeat the Desert King boss in the Golden Desert.', icon: '👑', unlocked: false },
   { id: 'Max Level', title: 'Legendary Hero', description: 'Reach Level 5 (1500 XP Threshold).', icon: '🌟', unlocked: false }
@@ -53,7 +53,7 @@ export const DEFAULT_REGIONS: Region[] = [
     mapX: 250,
     mapY: 220,
     weather: 'Hot',
-    locked: false,
+    locked: false, // Starting region is always unlocked
     minLevel: 1,
     currentStoryStage: 0,
     story: [
@@ -165,360 +165,445 @@ export const DEFAULT_REGIONS: Region[] = [
   }
 ];
 
-export const INITIAL_QUESTS: Record<string, Quest[]> = {
+export const INITIAL_CHALLENGES: Record<string, Challenge[]> = {
   golden_desert: [
     {
-      id: 'gd_q1',
+      id: 'gd_c1',
       title: 'Dawn in the Dunes',
       description: 'Set up your camp and establish communications.',
       difficulty: 'Easy',
       xpReward: 50,
-      goldReward: 20,
+      coinReward: 100,
       estimatedDuration: '5 mins',
-      requiredItems: [],
-      completionPercent: 0,
-      status: 'Not Started',
-      locked: false,
+      status: 'available',
       story: 'A massive sandstorm has uncovered the entrance of a buried temple. You must establish a base camp.',
       rarity: 'Common',
       category: 'Story',
+      unlockRequirements: {
+        requiredChallenges: [],
+        minimumLevel: 1,
+        minimumXP: 0,
+        requiredItems: [],
+        requiredRegion: 'golden_desert'
+      },
+      progress: { completedObjectives: 0, totalObjectives: 3 },
       objectives: [
-        { id: 'gd_q1_o1', text: 'Pitch a heavy duty storm tent', completed: false },
-        { id: 'gd_q1_o2', text: 'Calibrate the navigation scrollboard', completed: false },
-        { id: 'gd_q1_o3', text: 'Gather dry brushwood for campfire', completed: false }
+        { id: 'gd_c1_o1', text: 'Pitch a heavy duty storm tent', completed: false },
+        { id: 'gd_c1_o2', text: 'Calibrate the navigation scrollboard', completed: false },
+        { id: 'gd_c1_o3', text: 'Gather dry brushwood for campfire', completed: false }
       ]
     },
     {
-      id: 'gd_q2',
+      id: 'gd_c2',
       title: 'Scarab Relic Hunt',
       description: 'Scour the surrounding tombs for glowing golden relics.',
       difficulty: 'Medium',
       xpReward: 100,
-      goldReward: 40,
+      coinReward: 150,
       estimatedDuration: '10 mins',
-      requiredItems: ['compass'],
-      completionPercent: 0,
-      status: 'Not Started',
-      locked: true,
+      status: 'locked',
       story: 'Search the tomb entrance and locate sand-covered relics.',
       rarity: 'Uncommon',
       category: 'Exploration',
+      unlockRequirements: {
+        requiredChallenges: ['gd_c1'],
+        minimumLevel: 1,
+        minimumXP: 50,
+        requiredItems: ['compass'],
+        requiredRegion: 'golden_desert'
+      },
+      progress: { completedObjectives: 0, totalObjectives: 3 },
       objectives: [
-        { id: 'gd_q2_o1', text: 'Use Dune Compass to bypass mirages', completed: false },
-        { id: 'gd_q2_o2', text: 'Solve the tomb entry dial lock', completed: false },
-        { id: 'gd_q2_o3', text: 'Acquire 3 scarab tokens', completed: false }
+        { id: 'gd_c2_o1', text: 'Use Dune Compass to bypass mirages', completed: false },
+        { id: 'gd_c2_o2', text: 'Solve the tomb entry dial lock', completed: false },
+        { id: 'gd_c2_o3', text: 'Acquire 3 scarab tokens', completed: false }
       ]
     },
     {
-      id: 'gd_q3',
+      id: 'gd_c3',
       title: 'Scorpion Skirmish',
       description: 'Clear the guardian scorpion beasts blocking the inner sanctum.',
       difficulty: 'Hard',
       xpReward: 180,
-      goldReward: 60,
+      coinReward: 200,
       estimatedDuration: '15 mins',
-      requiredItems: ['rustysword'],
-      completionPercent: 0,
-      status: 'Not Started',
-      locked: true,
+      status: 'locked',
       story: 'Sand scorpions guard the outer perimeter. Defeat them to discover the temple key.',
       rarity: 'Rare',
       category: 'Combat',
+      unlockRequirements: {
+        requiredChallenges: ['gd_c2'],
+        minimumLevel: 1,
+        minimumXP: 150,
+        requiredItems: ['rustysword'],
+        requiredRegion: 'golden_desert'
+      },
+      progress: { completedObjectives: 0, totalObjectives: 2 },
       objectives: [
-        { id: 'gd_q3_o1', text: 'Slay 3 sand scorpions', completed: false },
-        { id: 'gd_q3_o2', text: 'Harvest scorpion poison venom', completed: false }
+        { id: 'gd_c3_o1', text: 'Slay 3 sand scorpions', completed: false },
+        { id: 'gd_c3_o2', text: 'Harvest scorpion poison venom', completed: false }
       ]
     },
     {
-      id: 'gd_q4',
+      id: 'gd_c4',
       title: 'The Desert King Boss Raid',
       description: 'Confront the Desert King and lock the desert vortex.',
       difficulty: 'Legendary',
       xpReward: 300,
-      goldReward: 150,
+      coinReward: 350,
       estimatedDuration: '30 mins',
-      requiredItems: ['sun_scepter', 'desert_key'],
-      completionPercent: 0,
-      status: 'Not Started',
-      locked: true,
+      status: 'locked',
       story: 'The Desert King has awakened! Defeat him to reclaim the golden relics!',
       rarity: 'Legendary',
       category: 'Boss',
+      unlockRequirements: {
+        requiredChallenges: ['gd_c3'],
+        minimumLevel: 1,
+        minimumXP: 300,
+        requiredItems: ['sun_scepter', 'desert_key'],
+        requiredRegion: 'golden_desert'
+      },
+      progress: { completedObjectives: 0, totalObjectives: 3 },
       objectives: [
-        { id: 'gd_q4_o1', text: 'Use Temple Key to unlock inner gate', completed: false },
-        { id: 'gd_q4_o2', text: 'Channel solar beam using Sun Scepter', completed: false },
-        { id: 'gd_q4_o3', text: 'Defeat the Desert King!', completed: false }
+        { id: 'gd_c4_o1', text: 'Use Temple Key to unlock inner gate', completed: false },
+        { id: 'gd_c4_o2', text: 'Channel solar beam using Sun Scepter', completed: false },
+        { id: 'gd_c4_o3', text: 'Defeat the Desert King!', completed: false }
       ]
     }
   ],
   frozen_peaks: [
     {
-      id: 'fp_q1',
+      id: 'fp_c1',
       title: 'Mountaineer Trials',
       description: 'Ascend the base slopes of Mount Fuji and brave the cold.',
       difficulty: 'Easy',
       xpReward: 60,
-      goldReward: 25,
+      coinReward: 120,
       estimatedDuration: '8 mins',
-      requiredItems: [],
-      completionPercent: 0,
-      status: 'Not Started',
-      locked: false,
+      status: 'locked',
       story: 'Clamber up the base slopes of Mount Fuji. Watch out for yeti tracks.',
       rarity: 'Common',
       category: 'Story',
+      unlockRequirements: {
+        requiredChallenges: [],
+        minimumLevel: 2,
+        minimumXP: 100,
+        requiredItems: [],
+        requiredRegion: 'frozen_peaks'
+      },
+      progress: { completedObjectives: 0, totalObjectives: 2 },
       objectives: [
-        { id: 'fp_q1_o1', text: 'Set up base camp at 1,000 meters elevation', completed: false },
-        { id: 'fp_q1_o2', text: 'Ignite thermal heat beacons', completed: false }
+        { id: 'fp_c1_o1', text: 'Set up base camp at 1,000 meters elevation', completed: false },
+        { id: 'fp_c1_o2', text: 'Ignite thermal heat beacons', completed: false }
       ]
     },
     {
-      id: 'fp_q2',
+      id: 'fp_c2',
       title: 'Glacial Cave Raid',
       description: 'Venture deep inside the frozen blue cavern.',
       difficulty: 'Medium',
       xpReward: 120,
-      goldReward: 50,
+      coinReward: 180,
       estimatedDuration: '12 mins',
-      requiredItems: [],
-      completionPercent: 0,
-      status: 'Not Started',
-      locked: true,
+      status: 'locked',
       story: 'Traverse the shifting ice caverns. Secure a safe path using spiked boots.',
       rarity: 'Uncommon',
       category: 'Adventure',
+      unlockRequirements: {
+        requiredChallenges: ['fp_c1'],
+        minimumLevel: 2,
+        minimumXP: 150,
+        requiredItems: [],
+        requiredRegion: 'frozen_peaks'
+      },
+      progress: { completedObjectives: 0, totalObjectives: 2 },
       objectives: [
-        { id: 'fp_q2_o1', text: 'Clear ice blocks using pickaxe tool', completed: false },
-        { id: 'fp_q2_o2', text: 'Gather glowing frost lilies', completed: false }
+        { id: 'fp_c2_o1', text: 'Clear ice blocks using pickaxe tool', completed: false },
+        { id: 'fp_c2_o2', text: 'Gather glowing frost lilies', completed: false }
       ]
     },
     {
-      id: 'fp_q3',
+      id: 'fp_c3',
       title: 'The Frost Wyrm Raid',
       description: 'Slay the ice dragon ruling the peaks.',
       difficulty: 'Legendary',
       xpReward: 350,
-      goldReward: 200,
+      coinReward: 400,
       estimatedDuration: '30 mins',
-      requiredItems: ['laserstaff'],
-      completionPercent: 0,
-      status: 'Not Started',
-      locked: true,
+      status: 'locked',
       story: 'Battle the Frost Wyrm and claim the legendary ice relic!',
       rarity: 'Legendary',
       category: 'Boss',
+      unlockRequirements: {
+        requiredChallenges: ['fp_c2'],
+        minimumLevel: 2,
+        minimumXP: 250,
+        requiredItems: ['laserstaff'],
+        requiredRegion: 'frozen_peaks'
+      },
+      progress: { completedObjectives: 0, totalObjectives: 2 },
       objectives: [
-        { id: 'fp_q3_o1', text: 'Weaken dragon shields with laser staff', completed: false },
-        { id: 'fp_q3_o2', text: 'Defeat the Frost Wyrm!', completed: false }
+        { id: 'fp_c3_o1', text: 'Weaken dragon shields with laser staff', completed: false },
+        { id: 'fp_c3_o2', text: 'Defeat the Frost Wyrm!', completed: false }
       ]
     }
   ],
   dark_forest: [
     {
-      id: 'df_q1',
+      id: 'df_c1',
       title: 'Whispering Woodlands',
-      description: 'Cross the boundary portal into the spore forests.',
+      description: 'Enter the whispering spore thickets. Avoid the root traps.',
       difficulty: 'Easy',
       xpReward: 80,
-      goldReward: 30,
+      coinReward: 150,
       estimatedDuration: '10 mins',
-      requiredItems: [],
-      completionPercent: 0,
-      status: 'Not Started',
-      locked: false,
+      status: 'locked',
       story: 'Enter the whispering thickets. Avoid the root traps.',
       rarity: 'Common',
       category: 'Story',
+      unlockRequirements: {
+        requiredChallenges: [],
+        minimumLevel: 3,
+        minimumXP: 250,
+        requiredItems: [],
+        requiredRegion: 'dark_forest'
+      },
+      progress: { completedObjectives: 0, totalObjectives: 2 },
       objectives: [
-        { id: 'df_q1_o1', text: 'Decode forest entrance coordinates', completed: false },
-        { id: 'df_q1_o2', text: 'Gather 5 poison spore dusts', completed: false }
+        { id: 'df_c1_o1', text: 'Decode forest entrance coordinates', completed: false },
+        { id: 'df_c1_o2', text: 'Gather 5 poison spore dusts', completed: false }
       ]
     },
     {
-      id: 'df_q2',
-      title: 'Fairy Crypt Code',
-      description: 'Activate fairy shrines using forest artifacts.',
+      id: 'df_c2',
+      title: 'Fairy Shrines Activation',
+      description: 'Offer glow-moss to activate the shrines.',
       difficulty: 'Medium',
       xpReward: 140,
-      goldReward: 60,
+      coinReward: 220,
       estimatedDuration: '15 mins',
-      requiredItems: [],
-      completionPercent: 0,
-      status: 'Not Started',
-      locked: true,
+      status: 'locked',
       story: 'Restore power to the fairy shrines by offering glow-moss.',
       rarity: 'Rare',
       category: 'Treasure',
+      unlockRequirements: {
+        requiredChallenges: ['df_c1'],
+        minimumLevel: 3,
+        minimumXP: 350,
+        requiredItems: [],
+        requiredRegion: 'dark_forest'
+      },
+      progress: { completedObjectives: 0, totalObjectives: 2 },
       objectives: [
-        { id: 'df_q2_o1', text: 'Collect fairy glow-moss', completed: false },
-        { id: 'df_q2_o2', text: 'Solve shrine logic puzzle', completed: false }
+        { id: 'df_c2_o1', text: 'Collect fairy glow-moss', completed: false },
+        { id: 'df_c2_o2', text: 'Solve shrine logic puzzle', completed: false }
       ]
     },
     {
-      id: 'df_q3',
-      title: 'Nightshade Golem Boss',
-      description: 'Destroy the corrupted stone guardian of the grove.',
+      id: 'df_c3',
+      title: 'Nightshade Golem Raid',
+      description: 'Topple the Nightshade Golem in the overgrown grove.',
       difficulty: 'Legendary',
       xpReward: 400,
-      goldReward: 250,
+      coinReward: 500,
       estimatedDuration: '30 mins',
-      requiredItems: ['laserstaff'],
-      completionPercent: 0,
-      status: 'Not Started',
-      locked: true,
+      status: 'locked',
       story: 'Topple the Nightshade Golem to unlock the forest treasury!',
       rarity: 'Legendary',
       category: 'Boss',
+      unlockRequirements: {
+        requiredChallenges: ['df_c2'],
+        minimumLevel: 3,
+        minimumXP: 500,
+        requiredItems: ['laserstaff'],
+        requiredRegion: 'dark_forest'
+      },
+      progress: { completedObjectives: 0, totalObjectives: 2 },
       objectives: [
-        { id: 'df_q3_o1', text: 'Expose Golem weakness point', completed: false },
-        { id: 'df_q3_o2', text: 'Shatter the golem core!', completed: false }
+        { id: 'df_c3_o1', text: 'Expose Golem weakness point', completed: false },
+        { id: 'df_c3_o2', text: 'Shatter the golem core!', completed: false }
       ]
     }
   ],
   volcanic_lands: [
     {
-      id: 'vl_q1',
+      id: 'vl_c1',
       title: 'Magma Infiltration',
-      description: 'Approach the lava pools of the citadel.',
+      description: 'Walk the burning pathways. Drink cooling potions to resist heat.',
       difficulty: 'Medium',
       xpReward: 100,
-      goldReward: 45,
+      coinReward: 200,
       estimatedDuration: '12 mins',
-      requiredItems: [],
-      completionPercent: 0,
-      status: 'Not Started',
-      locked: false,
+      status: 'locked',
       story: 'Walk the burning pathways. Drink cooling potions to resist heat.',
       rarity: 'Common',
       category: 'Story',
+      unlockRequirements: {
+        requiredChallenges: [],
+        minimumLevel: 4,
+        minimumXP: 500,
+        requiredItems: [],
+        requiredRegion: 'volcanic_lands'
+      },
+      progress: { completedObjectives: 0, totalObjectives: 2 },
       objectives: [
-        { id: 'vl_q1_o1', text: 'Drink heat resistance potion', completed: false },
-        { id: 'vl_q1_o2', text: 'Chart magma thermal heatwaves', completed: false }
+        { id: 'vl_c1_o1', text: 'Drink heat resistance potion', completed: false },
+        { id: 'vl_c1_o2', text: 'Chart magma thermal heatwaves', completed: false }
       ]
     },
     {
-      id: 'vl_q2',
-      title: 'Citadel Gate Raid',
-      description: 'Repair the obsidian drawbridge.',
+      id: 'vl_c2',
+      title: 'Citadel Drawbridge Fix',
+      description: 'Repair the obsidian drawbridge pulleys.',
       difficulty: 'Hard',
       xpReward: 180,
-      goldReward: 80,
+      coinReward: 280,
       estimatedDuration: '18 mins',
-      requiredItems: [],
-      completionPercent: 0,
-      status: 'Not Started',
-      locked: true,
+      status: 'locked',
       story: 'Repair the obsidian drawbridge leading to the Citadel.',
       rarity: 'Rare',
       category: 'Combat',
+      unlockRequirements: {
+        requiredChallenges: ['vl_c1'],
+        minimumLevel: 4,
+        minimumXP: 650,
+        requiredItems: [],
+        requiredRegion: 'volcanic_lands'
+      },
+      progress: { completedObjectives: 0, totalObjectives: 2 },
       objectives: [
-        { id: 'vl_q2_o1', text: 'Recover 3 obsidian slabs from fiery taverns', completed: false },
-        { id: 'vl_q2_o2', text: 'Ignite drawbridge pulleys', completed: false }
+        { id: 'vl_c2_o1', text: 'Recover 3 obsidian slabs from fiery taverns', completed: false },
+        { id: 'vl_c2_o2', text: 'Ignite drawbridge pulleys', completed: false }
       ]
     },
     {
-      id: 'vl_q3',
-      title: 'Lava Drake Boss Battle',
-      description: 'Slaughter the volcanic dragon.',
+      id: 'vl_c3',
+      title: 'Fire Drake Core Battle',
+      description: 'Slay the Lava Drake inside the volcanic core!',
       difficulty: 'Legendary',
       xpReward: 450,
-      goldReward: 300,
+      coinReward: 600,
       estimatedDuration: '30 mins',
-      requiredItems: ['laserstaff'],
-      completionPercent: 0,
-      status: 'Not Started',
-      locked: true,
+      status: 'locked',
       story: 'Slay the Fire Drake inside the volcanic core!',
       rarity: 'Legendary',
       category: 'Boss',
+      unlockRequirements: {
+        requiredChallenges: ['vl_c2'],
+        minimumLevel: 4,
+        minimumXP: 800,
+        requiredItems: ['laserstaff'],
+        requiredRegion: 'volcanic_lands'
+      },
+      progress: { completedObjectives: 0, totalObjectives: 2 },
       objectives: [
-        { id: 'vl_q3_o1', text: 'Survive lava tsunami breath', completed: false },
-        { id: 'vl_q3_o2', text: 'Vanquish the Lava Drake!', completed: false }
+        { id: 'vl_c3_o1', text: 'Survive lava tsunami breath', completed: false },
+        { id: 'vl_c3_o2', text: 'Vanquish the Lava Drake!', completed: false }
       ]
     }
   ],
   sky_kingdom: [
     {
-      id: 'sk_q1',
-      title: 'Gravity Portal Leak',
-      description: 'Travel via air current elevators into sky heights.',
+      id: 'sk_c1',
+      title: 'Zephyr Turbines Alignment',
+      description: 'Align the turbines and anchor yourself against drafts.',
       difficulty: 'Medium',
       xpReward: 120,
-      goldReward: 50,
+      coinReward: 250,
       estimatedDuration: '15 mins',
-      requiredItems: [],
-      completionPercent: 0,
-      status: 'Not Started',
-      locked: false,
+      status: 'locked',
       story: 'Teleport to the lowest cloud platform. Anchor yourself against drafts.',
       rarity: 'Common',
       category: 'Story',
+      unlockRequirements: {
+        requiredChallenges: [],
+        minimumLevel: 5,
+        minimumXP: 900,
+        requiredItems: [],
+        requiredRegion: 'sky_kingdom'
+      },
+      progress: { completedObjectives: 0, totalObjectives: 2 },
       objectives: [
-        { id: 'sk_q1_o1', text: 'Align wind turbines in Zephyr Outpost', completed: false },
-        { id: 'sk_q1_o2', text: 'Harvest 5 cloud crystal feathers', completed: false }
+        { id: 'sk_c1_o1', text: 'Align wind turbines in Zephyr Outpost', completed: false },
+        { id: 'sk_c1_o2', text: 'Harvest 5 cloud crystal feathers', completed: false }
       ]
     },
     {
-      id: 'sk_q2',
-      title: 'Storm Eagle Apex',
-      description: 'Confront the storm lord of high skies.',
+      id: 'sk_c2',
+      title: 'Storm Eagle Wind Crown',
+      description: 'Defeat the Storm Eagle and claim the Wind Crown.',
       difficulty: 'Legendary',
       xpReward: 500,
-      goldReward: 400,
+      coinReward: 700,
       estimatedDuration: '30 mins',
-      requiredItems: [],
-      completionPercent: 0,
-      status: 'Not Started',
-      locked: true,
+      status: 'locked',
       story: 'Pluck the wind crown from the Storm Eagle!',
       rarity: 'Legendary',
       category: 'Boss',
+      unlockRequirements: {
+        requiredChallenges: ['sk_c1'],
+        minimumLevel: 5,
+        minimumXP: 1100,
+        requiredItems: [],
+        requiredRegion: 'sky_kingdom'
+      },
+      progress: { completedObjectives: 0, totalObjectives: 3 },
       objectives: [
-        { id: 'sk_q2_o1', text: 'Climb the lightning spire cloud', completed: false },
-        { id: 'sk_q2_o2', text: 'Electrocute Storm Eagle shields', completed: false },
-        { id: 'sk_q2_o3', text: 'Claim the Wind Crown!', completed: false }
+        { id: 'sk_c2_o1', text: 'Climb the lightning spire cloud', completed: false },
+        { id: 'sk_c2_o2', text: 'Electrocute Storm Eagle shields', completed: false },
+        { id: 'sk_c2_o3', text: 'Claim the Wind Crown!', completed: false }
       ]
     }
   ],
   ancient_ruins: [
     {
-      id: 'ar_q1',
-      title: 'Decoder Gates',
-      description: 'Enter the final digital matrix coordinates.',
+      id: 'ar_c1',
+      title: 'Binary Gate Hacking',
+      description: 'Hack the console and solve the binary matrix puzzles.',
       difficulty: 'Hard',
       xpReward: 200,
-      goldReward: 100,
+      coinReward: 300,
       estimatedDuration: '20 mins',
-      requiredItems: [],
-      completionPercent: 0,
-      status: 'Not Started',
-      locked: false,
+      status: 'locked',
       story: 'Solve the binary matrix puzzles on the outer gates.',
       rarity: 'Rare',
       category: 'Story',
+      unlockRequirements: {
+        requiredChallenges: [],
+        minimumLevel: 6,
+        minimumXP: 1500,
+        requiredItems: [],
+        requiredRegion: 'ancient_ruins'
+      },
+      progress: { completedObjectives: 0, totalObjectives: 2 },
       objectives: [
-        { id: 'ar_q1_o1', text: 'Hack the ruins gateway console', completed: false },
-        { id: 'ar_q1_o2', text: 'Unpack the source code key', completed: false }
+        { id: 'ar_c1_o1', text: 'Hack the ruins gateway console', completed: false },
+        { id: 'ar_c1_o2', text: 'Unpack the source code key', completed: false }
       ]
     },
     {
-      id: 'ar_q2',
-      title: 'Titan Sentinel Awakening',
-      description: 'Test your strength against the Aegis robotic security.',
+      id: 'ar_c2',
+      title: 'Sanctum Titan Sentinel',
+      description: 'Awake the Titan Sentinel and face the final test.',
       difficulty: 'Legendary',
       xpReward: 600,
-      goldReward: 500,
+      coinReward: 1000,
       estimatedDuration: '40 mins',
-      requiredItems: ['laserstaff', 'sun_scepter'],
-      completionPercent: 0,
-      status: 'Not Started',
-      locked: true,
+      status: 'locked',
       story: 'Awake the Titan Sentinel and face the ultimate test.',
       rarity: 'Legendary',
       category: 'Boss',
+      unlockRequirements: {
+        requiredChallenges: ['ar_c1'],
+        minimumLevel: 6,
+        minimumXP: 2000,
+        requiredItems: ['laserstaff', 'sun_scepter'],
+        requiredRegion: 'ancient_ruins'
+      },
+      progress: { completedObjectives: 0, totalObjectives: 2 },
       objectives: [
-        { id: 'ar_q2_o1', text: 'Expose the mainframe core terminal', completed: false },
-        { id: 'ar_q2_o2', text: 'Shutdown the Aegis Titan!', completed: false }
+        { id: 'ar_c2_o1', text: 'Expose the mainframe core terminal', completed: false },
+        { id: 'ar_c2_o2', text: 'Shutdown the Aegis Titan!', completed: false }
       ]
     }
   ]

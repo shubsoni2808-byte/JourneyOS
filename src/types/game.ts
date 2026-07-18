@@ -36,7 +36,6 @@ export interface Inventory {
 export type QuestCategory = 'Story' | 'Adventure' | 'Combat' | 'Treasure' | 'Exploration' | 'Daily' | 'Weekly' | 'Boss';
 export type QuestRarity = 'Common' | 'Uncommon' | 'Rare' | 'Epic' | 'Legendary';
 export type QuestDifficulty = 'Easy' | 'Medium' | 'Hard' | 'Legendary';
-export type QuestStatus = 'Not Started' | 'In Progress' | 'Claim Reward' | 'Completed' | 'Failed';
 
 export interface QuestObjective {
   id: string;
@@ -44,22 +43,34 @@ export interface QuestObjective {
   completed: boolean;
 }
 
-export interface Quest {
+export interface ChallengeUnlockRequirements {
+  requiredChallenges: string[];
+  minimumLevel: number;
+  minimumXP: number;
+  requiredItems: string[];
+  requiredRegion: string | null;
+}
+
+export interface ChallengeProgress {
+  completedObjectives: number;
+  totalObjectives: number;
+}
+
+export interface Challenge {
   id: string;
   title: string;
   description: string;
   difficulty: QuestDifficulty;
   xpReward: number;
-  goldReward: number;
-  estimatedDuration: string;
-  requiredItems: string[];
-  completionPercent: number; // calculated as (completed / total) * 100
-  status: QuestStatus;
-  locked: boolean;
-  story: string;
-  rarity: QuestRarity;
-  category: QuestCategory;
+  coinReward: number; // replacing goldReward
+  status: 'locked' | 'available' | 'active' | 'completed';
+  unlockRequirements: ChallengeUnlockRequirements;
+  progress: ChallengeProgress;
   objectives: QuestObjective[];
+  story: string;
+  category: QuestCategory;
+  rarity: QuestRarity;
+  estimatedDuration: string;
 }
 
 export interface Region {
